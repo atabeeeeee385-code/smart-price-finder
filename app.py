@@ -10,7 +10,7 @@ def home():
     return send_from_directory(".", "index.html")
 
 
-# API البحث
+# API للبحث
 @app.route("/search")
 def search():
     query = request.args.get("q")
@@ -19,32 +19,17 @@ def search():
         return jsonify({"error": "لا يوجد كلمة بحث"}), 400
 
     try:
-        api_key = os.getenv("SERPAPI_KEY")
-
-        # 👇 مهم: نتأكد إن المفتاح موجود
-        if not api_key:
-            return jsonify({
-                "error": "API KEY مش متحط",
-                "advice": "❌ مش متاح"
-            })
-
         url = "https://serpapi.com/search.json"
 
         params = {
             "engine": "google_shopping",
             "q": query,
-            "api_key": api_key
+            # 👇 أهم حاجة هنا
+            "api_key": os.getenv("SERPAPI_KEY")
         }
 
         response = requests.get(url, params=params)
         data = response.json()
-
-        # 👇 Debug لو API فيه مشكلة
-        if "error" in data:
-            return jsonify({
-                "error": data["error"],
-                "advice": "❌ مش متاح"
-            })
 
         products = []
 
@@ -52,10 +37,12 @@ def search():
             price = item.get("price", "")
             price_num = 0
 
+            # تحويل السعر لرقم
             if price:
                 try:
                     price_num = float(
-                        price.replace("EGP", "")
+                        price.replace("$", "")
+                             .replace("EGP", "")
                              .replace("جنيه", "")
                              .replace(",", "")
                              .strip()
@@ -64,10 +51,10 @@ def search():
                     price_num = 0
 
             products.append({
-                "title": item.get("title"),
-                "price": price,
-                "link": item.get("link"),
-                "image": item.get("thumbnail"),
+                "title": item.get("title", "منتج بدون اسم"),
+                "price": price if price else "غير متوفر",
+                "link": item.get("link", "#"),
+                "image": item.get("thumbnail", ""),
                 "price_num": price_num
             })
 
@@ -93,12 +80,11 @@ def search():
     except Exception as e:
         return jsonify({
             "error": "حصلت مشكلة",
-            "details": str(e),
-            "advice": "❌ مش متاح"
+            "details": str(e)
         })
 
 
-# تشغيل على Railway
+# التشغيل على Railway
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
