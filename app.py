@@ -1,44 +1,70 @@
 from flask import Flask, request, jsonify, send_from_directory
+import requests
+import os
 
 app = Flask(__name__)
 
-# 💾 بيانات المنتجات (قبل وبعد)
-products = {
-    "iphone 13": {"price": 30000, "old_price": 32000},
-    "laptop dell": {"price": 25000, "old_price": 27000},
-    "rice": {"price": 30, "old_price": 35},
-    "samsung tv": {"price": 15000, "old_price": 18000}
-}
+RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY")
 
-# الصفحة الرئيسية
 @app.route('/')
 def home():
     return send_from_directory('.', 'index.html')
 
-# البحث
 @app.route('/search')
 def search():
-    query = request.args.get('product', '').lower()
-    results = []
+    query = request.args.get('q')
 
-    for name, data in products.items():
-        if query in name:
-            current = data["price"]
-            old = data["old_price"]
+    url = "https://real-time-amazon-data.p.rapidapi.com/search"
 
-            # 🤖 نصيحة
-            if current < old:
-                advice = "🔥 اشتري دلوقتي"
-            elif current > old:
-                advice = "⏳ استنى السعر ينزل"
-            else:
-                advice = "😐 السعر ثابت"
+    headers = {
+        "X-RapidAPI-Key": RAPIDAPI_KEY,
+        "X-RapidAPI-Host": "real-time-amazon-data.p.rapidapi.com"
+    }
 
-            results.append({
-                "name": name,
-                "price": current,
-                "old_price": old,
-                "advice": advice
+    params = {
+        "query": query,
+        "country": "US",
+        "page": "1"
+    }
+
+    response = requests.get(url, headers=headers, params=params)
+
+    data = response.json()
+
+    products = []
+
+    try:
+        for item in data['data']['products'][:5]:
+            price = item.get('product_price', '0')
+            price_num = int(''.join(filter(str.isdigit, price)) or 0)
+
+            products.append({
+                "name": item.get('product_title'),
+                "price": price,
+                "price_num": price_num,
+                "image": item.get('product_photo'),
+                "link": item.get('product_url')
             })
+    except:
+        return jsonify({"error": "في مشكلة في البيانات"})
 
-    return jsonify(results)
+    # مقارنة
+    prices = [p["price_num"] for p in products if p["price_num"] > 0]
+
+    advice = "❌ مش مستاهل"
+    if prices:
+        avg = sum(prices) / len(prices)
+        min_price = min(prices)
+
+        if min_price < avg:
+            advice = "🔥 اشتري دلوقتي"
+        else:
+            advice = "⏳ استنى شوية"
+
+    return jsonify({
+        "products": products,
+        "advice": advice
+    })
+
+if __name__ == '__main__':
+    app.run(host="0.0.0.0", port=5000)
