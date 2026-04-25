@@ -24,5 +24,3 @@ def search():
             results.append(p)
 
     return jsonify(results)
-
-app.run(host='0.0.0.0', port=10000)
