@@ -1,36 +1,31 @@
 from flask import Flask, request, jsonify, send_from_directory
 import requests
 import os
-import re
 
 app = Flask(__name__)
 
 # =========================
-# 🔥 Smart Search
+# تحسين البحث (ذكي)
 # =========================
 def improve_query(q):
     q = q.lower().strip()
 
-    # تنظيف الكلام
     stop_words = [
-        "عايز", "اريد", "محتاج", "هات", "جيب",
-        "افضل", "احسن", "كويس", "حلو",
-        "في", "من", "على", "لي", "لل"
+        "عايز","اريد","محتاج","هات","جيب",
+        "افضل","احسن","كويس","حلو",
+        "في","من","على","لي","لل"
     ]
 
     for w in stop_words:
         q = q.replace(w, "")
 
-    # ترجمة تلقائية
     try:
         from deep_translator import GoogleTranslator
         q = GoogleTranslator(source='auto', target='en').translate(q)
     except:
         pass
 
-    # توسيع البحث
-    q = f"{q} shopping buy online best price"
-
+    q = f"{q} buy online best price"
     return q
 
 
@@ -63,13 +58,17 @@ def search():
         params = {
             "engine": "google_shopping",
             "q": query,
-            "api_key": os.getenv("SERPAPI_KEY"),
+            "api_key": os.getenv("SERPAPI_KEY"),  # 🔥 مهم جدا
             "gl": "eg",
             "hl": "ar"
         }
 
         res = requests.get(url, params=params)
         data = res.json()
+
+        # لو المفتاح غلط
+        if "error" in data:
+            return jsonify({"error": data["error"]})
 
         products = []
 
@@ -79,8 +78,8 @@ def search():
 
             products.append({
                 "title": item.get("title"),
-                "price": price,
-                "price_num": price_num,
+                "price": price if price else "غير معروف",
+                "price_num": price_num if price_num else 0,
                 "link": item.get("link"),
                 "image": item.get("thumbnail")
             })
@@ -104,10 +103,7 @@ def search():
 
         if prices:
             avg = sum(prices) / len(prices)
-            if min(prices) < avg:
-                advice = "🔥 اشتري دلوقتي"
-            else:
-                advice = "⏳ استنى شوية"
+            advice = "🔥 اشتري دلوقتي" if min(prices) < avg else "⏳ استنى شوية"
 
         return jsonify({
             "products": products,
