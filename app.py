@@ -4,70 +4,84 @@ import os
 
 app = Flask(__name__)
 
-RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY")
-
-@app.route('/')
+# الصفحة الرئيسية (index.html)
+@app.route("/")
 def home():
-    return send_from_directory('.', 'index.html')
+    return send_from_directory(".", "index.html")
 
-@app.route('/search')
+
+# API للبحث عن الأسعار
+@app.route("/search")
 def search():
-    query = request.args.get('q')
+    query = request.args.get("q")
 
-    url = "https://real-time-amazon-data.p.rapidapi.com/search"
-
-    headers = {
-        "X-RapidAPI-Key": RAPIDAPI_KEY,
-        "X-RapidAPI-Host": "real-time-amazon-data.p.rapidapi.com"
-    }
-
-    params = {
-        "query": query,
-        "country": "US",
-        "page": "1"
-    }
-
-    response = requests.get(url, headers=headers, params=params)
-
-    data = response.json()
-
-    products = []
+    if not query:
+        return jsonify({"error": "لا يوجد كلمة بحث"}), 400
 
     try:
-        for item in data['data']['products'][:5]:
-            price = item.get('product_price', '0')
-            price_num = int(''.join(filter(str.isdigit, price)) or 0)
+        url = "https://serpapi.com/search.json"
+        params = {
+            "engine": "google_shopping",
+            "q": query,
+            "api_key": os.getenv("RAPIDAPI_KEY")  # لازم تحط المفتاح في Railway
+        }
+
+        response = requests.get(url, params=params)
+        data = response.json()
+
+        products = []
+
+        for item in data.get("shopping_results", []):
+            price = item.get("price", "")
+            price_num = 0
+
+            if price:
+                # نحاول نحول السعر لرقم
+                try:
+                    price_num = float(
+                        price.replace("EGP", "")
+                             .replace("جنيه", "")
+                             .replace(",", "")
+                             .strip()
+                    )
+                except:
+                    price_num = 0
 
             products.append({
-                "name": item.get('product_title'),
+                "title": item.get("title"),
                 "price": price,
-                "price_num": price_num,
-                "image": item.get('product_photo'),
-                "link": item.get('product_url')
+                "link": item.get("link"),
+                "image": item.get("thumbnail"),
+                "price_num": price_num
             })
-    except:
-        return jsonify({"error": "في مشكلة في البيانات"})
 
-    # مقارنة
-    prices = [p["price_num"] for p in products if p["price_num"] > 0]
+        # تحليل الأسعار
+        prices = [p["price_num"] for p in products if p["price_num"] > 0]
 
-    advice = "❌ مش مستاهل"
-    if prices:
-        avg = sum(prices) / len(prices)
-        min_price = min(prices)
+        advice = "❌ مش متاح"
 
-        if min_price < avg:
-            advice = "🔥 اشتري دلوقتي"
-        else:
-            advice = "⏳ استنى شوية"
+        if prices:
+            avg = sum(prices) / len(prices)
+            min_price = min(prices)
 
-    return jsonify({
-        "products": products,
-        "advice": advice
-    })
+            if min_price < avg:
+                advice = "🔥 اشتري دلوقتي"
+            else:
+                advice = "⏳ استنى شوية"
 
-import os
+        return jsonify({
+            "products": products,
+            "advice": advice
+        })
 
-if __name__ == '__main__':
+    except Exception as e:
+        return jsonify({
+            "error": "حصلت مشكلة",
+            "details": str(e)
+        })
+
+
+# التشغيل على Railway
+if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host="0.0.0.0", port=port)
