@@ -4,16 +4,18 @@ import os
 
 app = Flask(__name__)
 
+USD_TO_EGP = 50  # غيره حسب السعر الحقيقي
+
 # =========================
-# تحسين البحث (ذكي)
+# 🔥 Smart Search
 # =========================
 def improve_query(q):
     q = q.lower().strip()
 
     stop_words = [
-        "عايز","اريد","محتاج","هات","جيب",
-        "افضل","احسن","كويس","حلو",
-        "في","من","على","لي","لل"
+        "عايز", "اريد", "محتاج", "هات", "جيب",
+        "افضل", "احسن", "كويس", "حلو",
+        "في", "من", "على", "لي", "لل"
     ]
 
     for w in stop_words:
@@ -25,8 +27,7 @@ def improve_query(q):
     except:
         pass
 
-    q = f"{q} buy online best price"
-    return q
+    return f"{q} buy online best price"
 
 
 # =========================
@@ -58,33 +59,29 @@ def search():
         params = {
             "engine": "google_shopping",
             "q": query,
-            "api_key": os.getenv("SERPAPI_KEY"),  # 🔥 مهم جدا
-            "gl": "us",
-            "hl": "ar"
+            "api_key": os.getenv("SERPAPI_KEY"),
+            "hl": "en",
+            "gl": "us"
         }
 
         res = requests.get(url, params=params)
         data = res.json()
 
-        # لو المفتاح غلط
-        if "error" in data:
-            return jsonify({"error": data["error"]})
-
         products = []
 
         for item in data.get("shopping_results", []):
-            price = item.get("price", "")
             price_num = item.get("extracted_price", 0)
 
             products.append({
                 "title": item.get("title"),
-                "price": price if price else "غير معروف",
-                "price_num": price_num if price_num else 0,
+                "price": item.get("price"),
+                "price_num": price_num,
+                "price_egp": round(price_num * USD_TO_EGP) if price_num else None,
                 "link": item.get("link"),
                 "image": item.get("thumbnail")
             })
 
-        # فلترة السعر
+        # فلترة
         if min_price:
             products = [p for p in products if p["price_num"] >= float(min_price)]
 
@@ -103,7 +100,10 @@ def search():
 
         if prices:
             avg = sum(prices) / len(prices)
-            advice = "🔥 اشتري دلوقتي" if min(prices) < avg else "⏳ استنى شوية"
+            if min(prices) < avg:
+                advice = "🔥 اشتري دلوقتي"
+            else:
+                advice = "⏳ استنى شوية"
 
         return jsonify({
             "products": products,
