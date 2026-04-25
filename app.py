@@ -4,13 +4,13 @@ import os
 
 app = Flask(__name__)
 
-# الصفحة الرئيسية (index.html)
+# الصفحة الرئيسية
 @app.route("/")
 def home():
     return send_from_directory(".", "index.html")
 
 
-# API للبحث عن الأسعار
+# API البحث
 @app.route("/search")
 def search():
     query = request.args.get("q")
@@ -19,15 +19,32 @@ def search():
         return jsonify({"error": "لا يوجد كلمة بحث"}), 400
 
     try:
+        api_key = os.getenv("SERPAPI_KEY")
+
+        # 👇 مهم: نتأكد إن المفتاح موجود
+        if not api_key:
+            return jsonify({
+                "error": "API KEY مش متحط",
+                "advice": "❌ مش متاح"
+            })
+
         url = "https://serpapi.com/search.json"
+
         params = {
             "engine": "google_shopping",
             "q": query,
-            "api_key": os.getenv("RAPIDAPI_KEY")  # لازم تحط المفتاح في Railway
+            "api_key": api_key
         }
 
         response = requests.get(url, params=params)
         data = response.json()
+
+        # 👇 Debug لو API فيه مشكلة
+        if "error" in data:
+            return jsonify({
+                "error": data["error"],
+                "advice": "❌ مش متاح"
+            })
 
         products = []
 
@@ -36,7 +53,6 @@ def search():
             price_num = 0
 
             if price:
-                # نحاول نحول السعر لرقم
                 try:
                     price_num = float(
                         price.replace("EGP", "")
@@ -77,11 +93,12 @@ def search():
     except Exception as e:
         return jsonify({
             "error": "حصلت مشكلة",
-            "details": str(e)
+            "details": str(e),
+            "advice": "❌ مش متاح"
         })
 
 
-# التشغيل على Railway
+# تشغيل على Railway
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
