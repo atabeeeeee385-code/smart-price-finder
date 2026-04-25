@@ -6,13 +6,13 @@
 
 <style>
 body {
-    background: linear-gradient(135deg,#050816,#020617);
+    background: #050816;
     color: white;
     font-family: Arial;
     text-align: center;
 }
 
-/* اسمك 🔥 */
+/* Developer Box */
 .cyber-box {
     margin: 20px auto;
     padding: 20px;
@@ -28,47 +28,44 @@ body {
 
 /* Inputs */
 input, select {
-    padding: 12px;
+    padding: 10px;
     margin: 5px;
     border-radius: 10px;
     border: none;
-    width: 200px;
 }
 
 button {
-    padding: 12px;
+    padding: 10px;
     margin: 5px;
     border-radius: 10px;
-    background: #22c55e;
-    color: white;
-    border: none;
     cursor: pointer;
+    background: #00ff9f;
+    border: none;
 }
 
 /* Grid */
 .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(230px,1fr));
+    grid-template-columns: repeat(auto-fill, minmax(220px,1fr));
     gap: 15px;
     margin-top: 20px;
 }
 
 .card {
     background: #111827;
-    padding: 15px;
-    border-radius: 15px;
-    transition: 0.3s;
-}
-
-.card:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 20px #00fff7;
+    padding: 10px;
+    border-radius: 10px;
 }
 
 img {
     width: 100%;
-    height: 160px;
+    height: 150px;
     object-fit: contain;
+}
+
+.price {
+    color: #00ff9f;
+    font-weight: bold;
 }
 </style>
 </head>
@@ -101,6 +98,8 @@ img {
 <div class="grid" id="results"></div>
 
 <script>
+let products = []
+
 async function search() {
     let q = document.getElementById("searchInput").value
     let min = document.getElementById("min").value
@@ -110,21 +109,34 @@ async function search() {
     let res = await fetch(`/search?q=${q}&min=${min}&max=${max}&sort=${sort}`)
     let data = await res.json()
 
-    if(data.error){
-        document.getElementById("advice").innerText = "❌ " + data.error
-        return
-    }
-
+    products = data.products
     document.getElementById("advice").innerText = data.advice
 
+    show(products)
+}
+
+function show(list) {
     let html = ""
 
-    data.products.forEach(p => {
+    list.forEach(p => {
+
+        let priceText = ""
+
+        if(p.price_egp){
+            priceText = p.price_egp + " جنيه"
+        } else {
+            priceText = p.price
+        }
+
+        if(p.price && p.price.includes("month")){
+            priceText += " / شهري"
+        }
+
         html += `
         <div class="card">
             <img src="${p.image}">
             <h4>${p.title}</h4>
-            <p>${p.price}</p>
+            <p class="price">${priceText}</p>
             <a href="${p.link}" target="_blank">🛒 شراء</a>
         </div>
         `
