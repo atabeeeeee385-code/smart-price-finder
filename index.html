@@ -2,123 +2,154 @@
 <html lang="ar">
 <head>
 <meta charset="UTF-8">
-<title>Smart Price Finder 🔥</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Price Finder</title>
 
-<!-- ICONS -->
+<!-- Icons -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
 <style>
 body {
-    font-family: Arial;
+    margin: 0;
+    font-family: 'Cairo', sans-serif;
     background: linear-gradient(135deg, #0f172a, #020617);
     color: white;
+}
+
+/* Header */
+.header {
     text-align: center;
+    padding: 20px;
+    font-size: 28px;
+    font-weight: bold;
 }
 
-/* HEADER */
-h1 {
-    margin-top: 20px;
-}
-
-/* SEARCH BOX */
+/* Search */
 .search-box {
-    margin: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
 }
 
 input {
-    padding: 12px;
     width: 60%;
-    border-radius: 12px;
+    padding: 12px;
+    border-radius: 10px;
     border: none;
     outline: none;
 }
 
 button {
     padding: 12px 20px;
-    border-radius: 12px;
     border: none;
+    border-radius: 10px;
     background: #22c55e;
     color: white;
     cursor: pointer;
-    font-weight: bold;
 }
 
-/* CARDS */
-.card {
-    background: #1e293b;
+/* Advice */
+#advice {
+    text-align: center;
     margin: 15px;
-    padding: 15px;
+    font-size: 18px;
+}
+
+/* Grid */
+.products {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+    padding: 20px;
+}
+
+/* Card */
+.card {
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(10px);
     border-radius: 20px;
-    display: inline-block;
-    width: 250px;
+    padding: 15px;
+    text-align: center;
     transition: 0.3s;
 }
 
 .card:hover {
     transform: scale(1.05);
-    box-shadow: 0 0 20px #22c55e;
 }
 
-img {
-    width: 120px;
-    border-radius: 10px;
+.card img {
+    width: 100%;
+    height: 180px;
+    object-fit: contain;
 }
 
-a {
-    display: inline-block;
+.title {
+    font-size: 14px;
+    margin: 10px 0;
+    min-height: 40px;
+}
+
+.price {
+    color: #22c55e;
+    font-weight: bold;
+}
+
+.buy {
     margin-top: 10px;
-    padding: 8px 15px;
+    display: inline-block;
     background: #3b82f6;
+    padding: 8px 15px;
     border-radius: 10px;
     color: white;
     text-decoration: none;
-}
-
-/* ADVICE */
-#advice {
-    margin-top: 20px;
-    font-size: 22px;
 }
 </style>
 </head>
 
 <body>
 
-<h1><i class="fa-solid fa-bolt"></i> Smart Price Finder</h1>
+<div class="header">
+    ⚡ Smart Price Finder
+</div>
 
 <div class="search-box">
-    <input id="search" placeholder="🔍 اكتب المنتج بالعربي أو English">
+    <input id="searchInput" placeholder="ابحث عن منتج...">
     <button onclick="search()">
-        <i class="fa-solid fa-magnifying-glass"></i> Search
+        <i class="fa fa-search"></i> Search
     </button>
 </div>
 
-<h2 id="advice"></h2>
+<div id="advice"></div>
 
-<div id="results"></div>
+<div class="products" id="products"></div>
 
 <script>
 async function search() {
-    let q = document.getElementById("search").value;
+    const query = document.getElementById("searchInput").value;
 
-    let res = await fetch(`/search?q=${q}`);
-    let data = await res.json();
+    const res = await fetch(`/search?q=${query}`);
+    const data = await res.json();
 
-    let results = document.getElementById("results");
-    results.innerHTML = "";
+    const container = document.getElementById("products");
+    container.innerHTML = "";
 
-    document.getElementById("advice").innerHTML =
-        `<i class="fa-solid fa-brain"></i> ${data.advice}`;
+    document.getElementById("advice").innerText = data.advice || "";
 
     data.products.forEach(p => {
-        results.innerHTML += `
-        <div class="card">
-            <img src="${p.image}">
-            <h3><i class="fa-solid fa-box"></i> ${p.name}</h3>
-            <p><i class="fa-solid fa-dollar-sign"></i> ${p.price}</p>
 
-            <a href="${p.link}" target="_blank">
-                <i class="fa-solid fa-cart-shopping"></i> اشتري
+        const title = p.title || "منتج بدون اسم";
+        const price = p.price || "السعر غير متوفر";
+        const image = p.image || "https://via.placeholder.com/200";
+        const link = p.link || "#";
+
+        container.innerHTML += `
+        <div class="card">
+            <img src="${image}">
+            <div class="title"><i class="fa fa-box"></i> ${title}</div>
+            <div class="price"><i class="fa fa-dollar-sign"></i> ${price}</div>
+            <a class="buy" href="${link}" target="_blank">
+                <i class="fa fa-cart-shopping"></i> اشتري
             </a>
         </div>
         `;
