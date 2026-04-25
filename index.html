@@ -6,13 +6,13 @@
 
 <style>
 body {
-    background: #050816;
+    background: linear-gradient(135deg,#050816,#020617);
     color: white;
     font-family: Arial;
     text-align: center;
 }
 
-/* Cyber Developer Box */
+/* اسمك 🔥 */
 .cyber-box {
     margin: 20px auto;
     padding: 20px;
@@ -28,34 +28,46 @@ body {
 
 /* Inputs */
 input, select {
-    padding: 10px;
+    padding: 12px;
     margin: 5px;
     border-radius: 10px;
+    border: none;
+    width: 200px;
 }
 
 button {
-    padding: 10px;
+    padding: 12px;
     margin: 5px;
     border-radius: 10px;
+    background: #22c55e;
+    color: white;
+    border: none;
     cursor: pointer;
 }
 
+/* Grid */
 .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px,1fr));
+    grid-template-columns: repeat(auto-fill, minmax(230px,1fr));
     gap: 15px;
     margin-top: 20px;
 }
 
 .card {
     background: #111827;
-    padding: 10px;
-    border-radius: 10px;
+    padding: 15px;
+    border-radius: 15px;
+    transition: 0.3s;
+}
+
+.card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px #00fff7;
 }
 
 img {
     width: 100%;
-    height: 150px;
+    height: 160px;
     object-fit: contain;
 }
 </style>
@@ -89,8 +101,6 @@ img {
 <div class="grid" id="results"></div>
 
 <script>
-let products = []
-
 async function search() {
     let q = document.getElementById("searchInput").value
     let min = document.getElementById("min").value
@@ -100,22 +110,21 @@ async function search() {
     let res = await fetch(`/search?q=${q}&min=${min}&max=${max}&sort=${sort}`)
     let data = await res.json()
 
-    products = data.products
+    if(data.error){
+        document.getElementById("advice").innerText = "❌ " + data.error
+        return
+    }
+
     document.getElementById("advice").innerText = data.advice
 
-    show(products)
-}
-
-function show(list) {
     let html = ""
 
-    list.forEach(p => {
+    data.products.forEach(p => {
         html += `
         <div class="card">
             <img src="${p.image}">
             <h4>${p.title}</h4>
             <p>${p.price}</p>
-
             <a href="${p.link}" target="_blank">🛒 شراء</a>
         </div>
         `
