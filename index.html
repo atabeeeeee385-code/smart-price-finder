@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Price Finder</title>
+</head>
+<body>
+
+<h1>Search Product</h1>
+
+<input type="text" id="searchInput">
+<button onclick="search()">Search</button>
+
+<ul id="results"></ul>
+
+<script>
+function search() {
+    let query = document.getElementById("searchInput").value;
+
+    fetch(`https://YOUR-REPO-LINK/search?product=${query}`)
+    .then(res => res.json())
+    .then(data => {
+        let results = document.getElementById("results");
+        results.innerHTML = "";
+
+        data.forEach(item => {
+            let li = document.createElement("li");
+            li.textContent = item.name + " - " + item.price;
+            results.appendChild(li);
+        });
+    });
+}
+</script>
+
+</body>
+</html>
