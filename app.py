@@ -59,7 +59,7 @@ def search():
             "engine": "google_shopping",
             "q": query,
             "api_key": os.getenv("SERPAPI_KEY"),  # 🔥 مهم جدا
-            "gl": "eg",
+            "gl": "us",
             "hl": "ar"
         }
 
