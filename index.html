@@ -12,7 +12,7 @@ body {
     text-align: center;
 }
 
-/* Cyber Box */
+/* Cyber Developer Box */
 .cyber-box {
     margin: 20px auto;
     padding: 20px;
@@ -27,9 +27,9 @@ body {
 }
 
 /* Inputs */
-input {
+input, select {
     padding: 10px;
-    width: 60%;
+    margin: 5px;
     border-radius: 10px;
 }
 
@@ -42,7 +42,7 @@ button {
 
 .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px,1fr));
+    grid-template-columns: repeat(auto-fill, minmax(220px,1fr));
     gap: 15px;
     margin-top: 20px;
 }
@@ -55,6 +55,8 @@ button {
 
 img {
     width: 100%;
+    height: 150px;
+    object-fit: contain;
 }
 </style>
 </head>
@@ -68,68 +70,58 @@ img {
     <h2 class="cyber-name">ABDALLAH BADAWY</h2>
 </div>
 
-<input id="searchBox" placeholder="ابحث...">
+<input id="searchInput" placeholder="اكتب أي حاجة...">
 <button onclick="search()">بحث</button>
-<button onclick="showCheapest()">⭐ أرخص</button>
-<button onclick="showSaved()">❤️ محفوظ</button>
+
+<br>
+
+<input id="min" placeholder="اقل سعر">
+<input id="max" placeholder="اعلى سعر">
+
+<select id="sort">
+  <option value="">ترتيب</option>
+  <option value="cheap">الأرخص</option>
+  <option value="expensive">الأغلى</option>
+</select>
 
 <h2 id="advice"></h2>
 
 <div class="grid" id="results"></div>
 
 <script>
-let allProducts = []
-let saved = []
+let products = []
 
-function search() {
-    let q = document.getElementById("searchBox").value
+async function search() {
+    let q = document.getElementById("searchInput").value
+    let min = document.getElementById("min").value
+    let max = document.getElementById("max").value
+    let sort = document.getElementById("sort").value
 
-    fetch(`/search?q=${q}`)
-    .then(res => res.json())
-    .then(data => {
+    let res = await fetch(`/search?q=${q}&min=${min}&max=${max}&sort=${sort}`)
+    let data = await res.json()
 
-        document.getElementById("advice").innerText = data.advice
+    products = data.products
+    document.getElementById("advice").innerText = data.advice
 
-        allProducts = data.products
-
-        display(allProducts)
-
-        if (data.cheapest && data.cheapest.price_egp < 15000) {
-            alert("🔥 عرض جامد!")
-        }
-    })
+    show(products)
 }
 
-function display(products) {
+function show(list) {
     let html = ""
-    products.forEach(p => {
+
+    list.forEach(p => {
         html += `
         <div class="card">
             <img src="${p.image}">
             <h4>${p.title}</h4>
-            <p>${p.price_egp} جنيه</p>
+            <p>${p.price}</p>
 
-            <button onclick='save(${JSON.stringify(p)})'>❤️ حفظ</button>
             <a href="${p.link}" target="_blank">🛒 شراء</a>
         </div>
         `
     })
+
     document.getElementById("results").innerHTML = html
-}
-
-function showCheapest() {
-    if (allProducts.length) {
-        display([allProducts[0]])
-    }
-}
-
-function save(p) {
-    saved.push(p)
-    alert("تم الحفظ ❤️")
-}
-
-function showSaved() {
-    display(saved)
 }
 </script>
 
