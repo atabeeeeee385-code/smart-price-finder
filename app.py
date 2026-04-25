@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+import os
 
 app = Flask(__name__)
 
@@ -9,9 +10,18 @@ products = [
     {"name": "samsung tv", "price": 15000}
 ]
 
+@app.route('/')
+def home():
+    return "Smart Price Finder is running 🚀"
+
 @app.route('/search', methods=['GET'])
 def search():
-    query = request.args.get('product').lower()
+    query = request.args.get('product')
+
+    if not query:
+        return jsonify({"error": "please provide product"}), 400
+
+    query = query.lower()
 
     results = []
     for p in products:
@@ -20,4 +30,6 @@ def search():
 
     return jsonify(results)
 
-app.run(host='0.0.0.0', port=10000)
+
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
