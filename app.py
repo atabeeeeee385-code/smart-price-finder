@@ -18,10 +18,11 @@ def search():
 
     try:
         url = "https://serpapi.com/search.json"
+
         params = {
             "engine": "google_shopping",
             "q": query,
-            "api_key": os.getenv("SERPAPI_KEY")  # 👈 مهم جدًا
+            "api_key": os.getenv("SERPAPI_KEY")
         }
 
         response = requests.get(url, params=params)
@@ -30,54 +31,56 @@ def search():
         products = []
 
         for item in data.get("shopping_results", []):
-            price = item.get("price", "")
-            price_num = 0
+            title = item.get("title", "").lower()
 
-            if price:
-                try:
-                    price_num = float(
-                        price.replace("$", "")
-                             .replace("EGP", "")
-                             .replace(",", "")
-                             .strip()
-                    )
-                except:
-                    price_num = 0
+            # فلترة حسب البحث
+            if query.lower() not in title:
+                continue
+
+            price_str = item.get("price", "")
+            price_num = item.get("extracted_price", 0)
+
+            # تحويل للجنيه
+            usd_to_egp = 50
+            price_egp = price_num * usd_to_egp if price_num else 0
 
             products.append({
                 "title": item.get("title"),
-                "price": price,
+                "price": price_str,
+                "price_num": price_num,
+                "price_egp": round(price_egp, 2),
                 "link": item.get("link"),
-                "image": item.get("thumbnail"),
-                "price_num": price_num
+                "image": item.get("thumbnail")
             })
 
-        prices = [p["price_num"] for p in products if p["price_num"] > 0]
+        # ترتيب الأرخص
+        products = sorted(
+            products,
+            key=lambda x: x["price_num"] if x["price_num"] > 0 else 999999
+        )
 
+        cheapest = products[0] if products else None
+
+        # نصيحة
         advice = "❌ مش متاح"
-        cheapest = None
-
-        if prices:
-            avg = sum(prices) / len(prices)
-            min_price = min(prices)
-
-            cheapest = min(products, key=lambda x: x["price_num"] if x["price_num"] > 0 else 999999)
-
-            if min_price < avg:
-                advice = "🔥 اشتري دلوقتي"
-            else:
-                advice = "⏳ استنى شوية"
+        if products:
+            prices = [p["price_num"] for p in products if p["price_num"] > 0]
+            if prices:
+                avg = sum(prices) / len(prices)
+                if min(prices) < avg:
+                    advice = "🔥 اشتري دلوقتي"
+                else:
+                    advice = "⏳ استنى شوية"
 
         return jsonify({
             "products": products,
-            "advice": advice,
-            "cheapest": cheapest
+            "cheapest": cheapest,
+            "advice": advice
         })
 
     except Exception as e:
         return jsonify({
-            "error": "حصلت مشكلة",
-            "details": str(e)
+            "error": str(e)
         })
 
 
