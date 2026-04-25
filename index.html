@@ -1,34 +1,140 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Price Finder</title>
+<meta charset="UTF-8">
+<title>Smart Price Finder</title>
+
+<style>
+body {
+    font-family: Arial;
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    color: white;
+    text-align: center;
+    padding: 50px;
+}
+
+h1 {
+    font-size: 40px;
+}
+
+.search-box {
+    background: rgba(255,255,255,0.1);
+    padding: 20px;
+    border-radius: 15px;
+    display: inline-block;
+}
+
+input {
+    padding: 10px;
+    width: 250px;
+    border-radius: 10px;
+    border: none;
+}
+
+button {
+    padding: 10px 20px;
+    border-radius: 10px;
+    border: none;
+    background: #00c6ff;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+#results {
+    margin-top: 30px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+}
+
+.card {
+    background: rgba(255,255,255,0.1);
+    padding: 15px;
+    border-radius: 15px;
+    width: 220px;
+}
+</style>
 </head>
+
 <body>
 
-<h1>Search Product</h1>
+<h1>💰 Smart Price Finder</h1>
 
-<input type="text" id="searchInput">
-<button onclick="search()">Search</button>
+<div class="search-box">
+    <input type="text" id="searchInput" placeholder="Search product...">
+    <button onclick="searchProduct()">Search</button>
+</div>
 
-<ul id="results"></ul>
+<div id="results"></div>
 
 <script>
-function search() {
+
+function searchProduct() {
     let query = document.getElementById("searchInput").value;
 
-    fetch(`https://YOUR-REPO-LINK/search?product=${query}`)
+    fetch(`/search?product=${query}`)
     .then(res => res.json())
     .then(data => {
+
         let results = document.getElementById("results");
         results.innerHTML = "";
 
+        if (data.length === 0) {
+            results.innerHTML = "<p>❌ مفيش نتائج</p>";
+            return;
+        }
+
         data.forEach(item => {
-            let li = document.createElement("li");
-            li.textContent = item.name + " - " + item.price;
-            results.appendChild(li);
+
+            let diff = item.old_price - item.price;
+
+            let card = document.createElement("div");
+            card.className = "card";
+
+            card.innerHTML = `
+                <h3>${item.name}</h3>
+
+                <p style="text-decoration: line-through; color: gray;">
+                    💸 ${item.old_price} EGP
+                </p>
+
+                <p style="font-size: 20px;">
+                    💵 ${item.price} EGP
+                </p>
+
+                <p style="color:${diff > 0 ? 'lightgreen' : 'red'};">
+                    ${diff > 0 ? '⬇️ السعر نزل' : '⬆️ السعر زاد'}
+                </p>
+
+                <p>${item.advice}</p>
+
+                <button onclick="notifyDrop('${item.name}', ${item.price})">
+                    🔔 تابع السعر
+                </button>
+            `;
+
+            results.appendChild(card);
         });
+
     });
 }
+
+function notifyDrop(name, price) {
+    let alerts = JSON.parse(localStorage.getItem("alerts")) || [];
+    alerts.push({name, price});
+    localStorage.setItem("alerts", JSON.stringify(alerts));
+
+    alert("✅ هنبعتلك لما السعر يقل!");
+}
+
+// Enter search
+document.getElementById("searchInput").addEventListener("keypress", function(e) {
+    if (e.key === "Enter") {
+        searchProduct();
+    }
+});
+
 </script>
 
 </body>
