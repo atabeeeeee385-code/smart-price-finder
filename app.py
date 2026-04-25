@@ -4,13 +4,11 @@ import os
 
 app = Flask(__name__)
 
-# الصفحة الرئيسية
 @app.route("/")
 def home():
     return send_from_directory(".", "index.html")
 
 
-# API للبحث
 @app.route("/search")
 def search():
     query = request.args.get("q")
@@ -20,12 +18,10 @@ def search():
 
     try:
         url = "https://serpapi.com/search.json"
-
         params = {
             "engine": "google_shopping",
             "q": query,
-            # 👇 أهم حاجة هنا
-            "api_key": os.getenv("SERPAPI_KEY")
+            "api_key": os.getenv("SERPAPI_KEY")  # 👈 مهم جدًا
         }
 
         response = requests.get(url, params=params)
@@ -37,13 +33,11 @@ def search():
             price = item.get("price", "")
             price_num = 0
 
-            # تحويل السعر لرقم
             if price:
                 try:
                     price_num = float(
                         price.replace("$", "")
                              .replace("EGP", "")
-                             .replace("جنيه", "")
                              .replace(",", "")
                              .strip()
                     )
@@ -51,21 +45,23 @@ def search():
                     price_num = 0
 
             products.append({
-                "title": item.get("title", "منتج بدون اسم"),
-                "price": price if price else "غير متوفر",
-                "link": item.get("link", "#"),
-                "image": item.get("thumbnail", ""),
+                "title": item.get("title"),
+                "price": price,
+                "link": item.get("link"),
+                "image": item.get("thumbnail"),
                 "price_num": price_num
             })
 
-        # تحليل الأسعار
         prices = [p["price_num"] for p in products if p["price_num"] > 0]
 
         advice = "❌ مش متاح"
+        cheapest = None
 
         if prices:
             avg = sum(prices) / len(prices)
             min_price = min(prices)
+
+            cheapest = min(products, key=lambda x: x["price_num"] if x["price_num"] > 0 else 999999)
 
             if min_price < avg:
                 advice = "🔥 اشتري دلوقتي"
@@ -74,7 +70,8 @@ def search():
 
         return jsonify({
             "products": products,
-            "advice": advice
+            "advice": advice,
+            "cheapest": cheapest
         })
 
     except Exception as e:
@@ -84,7 +81,6 @@ def search():
         })
 
 
-# التشغيل على Railway
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
